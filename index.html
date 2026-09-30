@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Atelier Hub — Clients, Costing &amp; Karigars</title>
+<meta name="theme-color" content="#1B2036">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Atelier Hub">
+<link rel="apple-touch-icon" id="appleTouchIcon" href="">
+<link rel="icon" id="appFavicon" href="">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFFFFF; --raised:#F6F7FB; --raised-2:#ECEEF6; --line:#DFE2EE;
+    --ink:#1B2036; --ash:#5D6479; --ash-dim:#9CA1B5;
+    --indigo:#4A55C4; --indigo-soft:#4A55C41e;
+    --gold:#B8862E; --gold-soft:#B8862E1e;
+    --rose:#B1493D; --rose-soft:#B1493D1e;
+    --moss:#3F8361; --moss-soft:#3F83611e;
+    --radius-s:10px; --radius-m:16px; --radius-l:24px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif;}
+  body{min-height:100vh; display:flex; justify-content:center; padding-bottom:92px;}
+  #app{width:100%; max-width:480px; min-height:100vh;}
+  h1,h2,h3,.num{font-family:'Space Grotesk',sans-serif;}
+
+  header.top{padding:24px 20px 8px;}
+  header.top .brand{font-size:18px; font-weight:700; letter-spacing:-0.01em;}
+  header.top .brand span{color:var(--indigo);}
+  header.top .sub{font-size:11.5px; color:var(--ash-dim); margin-top:2px;}
+
+  section.screen{display:none; padding:14px 18px 30px;}
+  section.screen.active{display:block; animation:fade .2s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  .card{background:var(--raised); border:1px solid var(--line); border-radius:var(--radius-m); padding:16px; margin-bottom:13px;}
+  .card h3{margin:0 0 11px; font-size:13px; font-weight:600; color:var(--ash);}
+  .form-grid{display:flex; flex-direction:column; gap:8px;}
+  .form-row{display:flex; gap:8px;}
+  label.flabel{font-size:11px; color:var(--ash-dim); margin-bottom:-3px;}
+  input, select, textarea{
+    background:var(--raised-2); border:1px solid var(--line); border-radius:var(--radius-s);
+    color:var(--ink); font-family:'Inter'; font-size:13px; padding:10px 11px; width:100%; min-width:0;
+  }
+  input:focus, select:focus, textarea:focus{outline:none; border-color:var(--indigo);}
+  button.add-btn{
+    background:var(--indigo); color:#fff; border:none; border-radius:var(--radius-s);
+    padding:11px; font-weight:600; font-family:'Inter'; font-size:13px; cursor:pointer; margin-top:2px;
+  }
+  button.add-btn:active{transform:scale(.98);}
+  button.ghost-btn{
+    background:transparent; border:1px dashed var(--line); color:var(--ash); border-radius:var(--radius-s);
+    padding:9px; font-weight:600; font-size:12px; cursor:pointer; font-family:'Inter';
+  }
+  button.small-btn{
+    background:var(--ink); color:#fff; border:none; border-radius:999px; padding:6px 12px;
+    font-size:11px; font-family:'Space Grotesk'; cursor:pointer; flex-shrink:0;
+  }
+  .empty-note{color:var(--ash-dim); font-size:12.5px; padding:14px 4px; text-align:center;}
+  .del-x{color:var(--ash-dim); cursor:pointer; font-size:12px; margin-left:8px; flex-shrink:0;}
+  .del-client{color:var(--ash-dim); cursor:pointer; font-size:14px; padding:4px;}
+  .del-order{color:var(--ash-dim); cursor:pointer; font-size:11px; margin-left:8px;}
+  .del-client.confirming, .del-order.confirming{
+    color:#fff; background:var(--rose); font-size:10.5px; font-family:'Space Grotesk';
+    padding:4px 9px; border-radius:999px; white-space:nowrap;
+  }
+
+  /* client / order cards */
+  .client-card{border:1px solid var(--line); border-radius:var(--radius-m); margin-bottom:11px; overflow:hidden; background:var(--bg);}
+  .client-head{padding:13px 15px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;}
+  .client-head .cname{font-weight:600; font-size:14px;}
+  .client-head .csub{font-size:11px; color:var(--ash-dim); margin-top:2px;}
+  .client-head .chev{color:var(--ash-dim); font-size:11px; transition:transform .2s ease;}
+  .client-card.open .chev{transform:rotate(180deg);}
+  .client-body{display:none; padding:0 15px 13px;}
+  .client-card.open .client-body{display:block;}
+
+  .order-block{border-top:1px solid var(--line); padding:12px 0;}
+  .order-top{display:flex; justify-content:space-between; align-items:center; cursor:pointer;}
+  .order-top .oname{font-weight:600; font-size:13.5px;}
+  .order-top .ostage{font-size:10.5px; font-family:'Space Grotesk'; padding:3px 9px; border-radius:999px; background:var(--indigo-soft); color:var(--indigo); cursor:pointer;}
+  .order-money{display:flex; gap:12px; margin-top:7px; font-size:11.5px;}
+  .order-money .om{color:var(--ash-dim);}
+  .order-money .ov{font-family:'Space Grotesk'; font-weight:600;}
+  .order-money .profit.pos{color:var(--moss);}
+  .order-money .profit.neg{color:var(--rose);}
+  .order-detail{display:none; margin-top:10px; background:var(--raised); border-radius:var(--radius-s); padding:11px;}
+  .order-block.open .order-detail{display:block;}
+
+  .line-row{display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:12px; border-bottom:1px solid var(--line);}
+  .line-row:last-child{border-bottom:none;}
+  .mini-add{display:flex; gap:6px; margin-top:8px;}
+  .mini-add select, .mini-add input{font-size:12px; padding:8px 9px;}
+  .mini-add button{flex-shrink:0;}
+  .subhead{font-size:11px; color:var(--ash-dim); margin-top:10px; margin-bottom:2px; text-transform:uppercase; letter-spacing:.03em;}
+  .stage-card{background:var(--bg); border:1px solid var(--line); border-radius:var(--radius-s); padding:9px 10px; margin-bottom:7px;}
+  .stage-card-top{display:flex; justify-content:space-between; align-items:center;}
+  .stage-card-name{font-weight:600; font-size:12.5px;}
+  .stage-state-chip{font-size:10px; font-family:'Space Grotesk'; padding:3px 8px; border-radius:999px; cursor:pointer;}
+  .stage-state-chip.not_issued{background:var(--raised-2); color:var(--ash-dim);}
+  .stage-state-chip.started{background:var(--indigo-soft); color:var(--indigo);}
+  .stage-state-chip.completed{background:var(--gold-soft); color:var(--gold);}
+  .stage-state-chip.received{background:var(--moss-soft); color:var(--moss);}
+  .stage-card-fields select, .stage-card-fields input{font-size:11.5px; padding:7px 8px; margin-top:5px;}
+  .stage-card-fields .form-row input{margin-top:0;}
+  .supervisor-select{margin-bottom:4px;}
+  .cost-summary{margin-top:10px; padding-top:9px; border-top:1px dashed var(--line); font-size:12px;}
+  .cost-summary .row{display:flex; justify-content:space-between; padding:3px 0;}
+  .cost-summary .row.total{font-weight:600; font-family:'Space Grotesk'; border-top:1px solid var(--line); margin-top:4px; padding-top:6px;}
+  .cost-summary .row.profit{font-weight:700; font-family:'Space Grotesk';}
+
+  /* materials */
+  .mat-cat{font-size:11.5px; color:var(--ash-dim); text-transform:uppercase; letter-spacing:.03em; margin:14px 0 6px;}
+  .mat-cat:first-child{margin-top:0;}
+  .mat-row{display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--line);}
+  .mat-row:last-child{border-bottom:none;}
+  .mat-row .mname{font-weight:600; font-size:13px;}
+  .mat-row .mmeta{font-size:11px; color:var(--ash-dim); margin-top:2px;}
+  .mat-row .mstock{font-family:'Space Grotesk'; font-size:13px; text-align:right;}
+  .mat-row .mstock.low{color:var(--rose);}
+
+  /* karigar */
+  .kar-row{display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid var(--line);}
+  .kar-row:last-child{border-bottom:none;}
+  .kar-row .kname{font-weight:600; font-size:13.5px;}
+  .kar-row .kmeta{font-size:11px; color:var(--ash-dim); margin-top:2px;}
+  .kar-row .kearn{font-family:'Space Grotesk'; font-size:13px; text-align:right; color:var(--gold);}
+  .kar-status{font-size:10px; font-family:'Space Grotesk'; padding:2px 8px; border-radius:999px; margin-top:4px; cursor:pointer; display:inline-block;}
+  .kar-status.on{background:var(--moss-soft); color:var(--moss);}
+  .kar-status.off{background:var(--rose-soft); color:var(--rose);}
+
+  /* expenses */
+  .overhead-row{display:flex; gap:8px;}
+  .exp-row{display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line); font-size:12.5px;}
+  .exp-row:last-child{border-bottom:none;}
+  .exp-row .esub{font-size:10.5px; color:var(--ash-dim); margin-top:2px;}
+
+  .stage-group{border:1px solid var(--line); border-radius:var(--radius-m); margin-bottom:11px; overflow:hidden; background:var(--bg);}
+  .stage-group-head{padding:12px 14px; background:var(--raised); display:flex; align-items:center; cursor:pointer;}
+  .stage-group-head .sgname{font-weight:600; font-size:13.5px;}
+  .stage-group-head .sgcount{background:var(--indigo); color:#fff; font-size:10.5px; font-family:'Space Grotesk'; padding:2px 8px; border-radius:999px; margin-left:8px;}
+  .stage-group-body{padding:2px 14px 10px;}
+  .board-item{border-top:1px solid var(--line); padding:10px 0;}
+  .board-item .biname{font-weight:600; font-size:13px;}
+  .board-item .bisub{font-size:11px; color:var(--ash-dim); margin-top:2px;}
+
+  nav.tabbar{position:fixed; bottom:0; left:0; right:0; display:flex; justify-content:center;
+    background:linear-gradient(0deg, var(--bg) 65%, transparent); padding:10px 0 max(10px, env(safe-area-inset-bottom)); z-index:10;}
+  nav.tabbar .inner{width:calc(100% - 32px); max-width:460px; background:var(--raised); border:1px solid var(--line);
+    border-radius:999px; display:flex; padding:5px;}
+  nav.tabbar button{flex:1; background:transparent; border:none; color:var(--ash-dim); padding:9px 0;
+    border-radius:999px; font-family:'Inter'; font-size:10px; font-weight:600; cursor:pointer; white-space:nowrap;}
+  nav.tabbar button.active{background:var(--ink); color:#fff;}
+  ::-webkit-scrollbar{width:0; height:0;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="top">
+    <div class="brand">ATELIER<span> · </span>HUB</div>
+    <div class="sub">Clients, costing, karigars & materials — all linked</div>
+  </header>
+
+  <!-- CLIENTS -->
+  <section class="screen active" id="screen-clients">
+    <div class="card">
+      <h3>Add client</h3>
+      <div class="form-row">
+        <input id="cliName" placeholder="Client name">
+        <input id="cliPhone" placeholder="Phone">
+      </div>
+      <button class="add-btn" id="addCliBtn" style="margin-top:8px;">Add Client</button>
+    </div>
+    <div id="clientList"></div>
+  </section>
+
+  <!-- MATERIALS -->
+  <section class="screen" id="screen-materials">
+    <div class="card">
+      <h3>Add material type</h3>
+      <div class="form-grid">
+        <div class="form-row">
+          <input id="matCategory" list="catList" placeholder="Category (e.g. Fabric)">
+          <datalist id="catList">
+            <option value="Fabric"><option value="Zips"><option value="Thread"><option value="Cups">
+          </datalist>
+          <input id="matName" placeholder="Name (e.g. Cotton)">
+        </div>
+        <div class="form-row">
+          <select id="matUnit"><option value="m">metre</option><option value="pcs">piece</option><option value="yard">yard</option><option value="kg">kg</option><option value="roll">roll</option></select>
+          <input type="number" id="matStock" placeholder="Starting stock">
+          <input type="number" id="matCost" placeholder="Cost/unit ₹">
+        </div>
+        <button class="add-btn" id="addMatBtn">Add Material</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Log a purchase (adds to stock)</h3>
+      <div class="form-row">
+        <select id="purMaterial"></select>
+        <input type="number" id="purQty" placeholder="Qty bought">
+        <input type="number" id="purCost" placeholder="Total ₹">
+      </div>
+      <button class="add-btn" id="logPurBtn" style="margin-top:8px;">Log Purchase</button>
+    </div>
+    <div class="card">
+      <h3>Inventory</h3>
+      <div id="materialList"></div>
+    </div>
+  </section>
+
+  <!-- KARIGAR -->
+  <section class="screen" id="screen-karigar">
+    <div class="card">
+      <h3>Add karigar / worker</h3>
+      <div class="form-grid">
+        <input id="karName" placeholder="Name">
+        <div class="form-row">
+          <select id="karRole"><option>Tailor</option><option>Embroidery</option><option>Cutting</option><option>Quality Control</option><option>Other</option></select>
+          <input type="number" id="karRate" placeholder="Rate ₹/hour">
+        </div>
+        <input id="karPhone" placeholder="Phone">
+        <button class="add-btn" id="addKarBtn">Add Karigar</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>All karigars</h3>
+      <div id="karigarList"></div>
+    </div>
+  </section>
+
+  <!-- EXPENSES -->
+  <section class="screen" id="screen-expenses">
+    <div class="card">
+      <h3>Backup & sync between devices</h3>
+      <div class="esub" style="color:var(--ash-dim); margin-bottom:9px;">Your data stays on this device only. To move it to your other phone or laptop: Export here, copy the text, then paste it into Import on the other device.</div>
+      <button class="add-btn" id="exportBtn">Export all data</button>
+      <textarea id="exportBox" readonly style="margin-top:8px; min-height:80px; font-size:10px; font-family:monospace;" placeholder="Tap Export, then copy this text"></textarea>
+      <button class="ghost-btn" id="copyExportBtn" style="margin-top:6px; width:100%;">Copy to clipboard</button>
+      <div id="syncStatus" class="esub" style="margin-top:6px; min-height:14px;"></div>
+      <div class="esub" style="margin-top:12px; color:var(--ash-dim);">On the other device, paste the copied text below:</div>
+      <textarea id="importBox" style="margin-top:6px; min-height:80px; font-size:10px; font-family:monospace;" placeholder="Paste exported data here"></textarea>
+      <button class="add-btn" id="importBtn" style="margin-top:6px; background:var(--rose);">Import (replaces data on this device)</button>
+    </div>
+    <div class="card">
+      <h3>Daily overheads</h3>
+      <div class="overhead-row">
+        <div style="flex:1;">
+          <label class="flabel">Electricity ₹/day</label>
+          <input type="number" id="ohElectricity">
+        </div>
+        <div style="flex:1;">
+          <label class="flabel">Rent ₹/day</label>
+          <input type="number" id="ohRent">
+        </div>
+      </div>
+      <button class="add-btn" id="saveOverheadBtn" style="margin-top:8px;">Save</button>
+      <div class="esub" style="margin-top:8px; color:var(--ash-dim);">Applied automatically per order, based on days in production.</div>
+    </div>
+    <div class="card">
+      <h3>Other expenses</h3>
+      <div class="form-row">
+        <input id="expDesc" placeholder="Description">
+        <input type="number" id="expAmt" placeholder="₹">
+      </div>
+      <button class="add-btn" id="addExpBtn" style="margin-top:8px;">Log Expense</button>
+      <div id="expList" style="margin-top:10px;"></div>
+    </div>
+    <div class="card">
+      <h3>Material purchases (log)</h3>
+      <div id="purList"></div>
+    </div>
+  </section>
+
+  <!-- PRODUCTION BOARD -->
+  <section class="screen" id="screen-production">
+    <div class="card" style="margin-bottom:14px;">
+      <h3>Production — by stage</h3>
+      <div class="esub" style="color:var(--ash-dim);">Items grouped by their current pending stage, earliest stage first.</div>
+    </div>
+    <div id="productionBoard"></div>
+  </section>
+
+  <nav class="tabbar">
+    <div class="inner">
+      <button class="tab-btn active" data-screen="clients">Clients</button>
+      <button class="tab-btn" data-screen="production">Prod.</button>
+      <button class="tab-btn" data-screen="materials">Materials</button>
+      <button class="tab-btn" data-screen="karigar">Karigar</button>
+      <button class="tab-btn" data-screen="expenses">Expenses</button>
+    </div>
+  </nav>
+</div>
+
+<script>
+(function(){
+  var iconDataUri = "data:image/png;base64,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";
+  document.getElementById('appleTouchIcon').setAttribute('href', iconDataUri);
+  document.getElementById('appFavicon').setAttribute('href', iconDataUri);
+  try {
+    var manifest = {
+      name: "Atelier Hub",
+      short_name: "Atelier Hub",
+      start_url: ".",
+      display: "standalone",
+      background_color: "#FFFFFF",
+      theme_color: "#1B2036",
+      icons: [
+        { src: iconDataUri, sizes: "512x512", type: "image/png" },
+        { src: iconDataUri, sizes: "192x192", type: "image/png" }
+      ]
+    };
+    var blob = new Blob([JSON.stringify(manifest)], {type: "application/manifest+json"});
+    var link = document.createElement('link');
+    link.rel = "manifest";
+    link.href = URL.createObjectURL(blob);
+    document.head.appendChild(link);
+  } catch(e) {}
+})();
+</script>
+<script>
+(function(){
+  const store = {
+    get(k, fb){ try{ const v = localStorage.getItem(k); return v===null? fb : JSON.parse(v); }catch(e){ return fb; } },
+    set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+  };
+  const uid = ()=> Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+  const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const fmtDay = iso => iso ? new Date(iso).toLocaleDateString(undefined,{month:'short', day:'numeric'}) : '—';
+  const money = n => '₹' + (Math.round((n||0)*100)/100).toLocaleString('en-IN');
+  const todayISO = () => new Date().toISOString().slice(0,10);
+
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('screen-'+btn.dataset.screen).classList.add('active');
+    });
+  });
+
+  const STAGES = ['Cutting','Embroidery','Stitching','Quality Control'];
+  const STAGE_STATE_ORDER = ['not_issued','started','completed','received'];
+  const STAGE_STATE_LABEL = {not_issued:'Not issued', started:'Started', completed:'Completed', received:'Received'};
+  function freshStages(){
+    return STAGES.map(name=> ({name, state:'not_issued', workerId:'', estMin:0, actualMin:0, date:'', notes:''}));
+  }
+
+  // ================= DATA =================
+  let customers = store.get('customers', []);      // {id, name, phone}
+  let orders = store.get('orders', []);             // {id, customerId, item, price, due, stage, days, materialsUsed:[], laborUsed:[]}
+  let materials = store.get('materials', null);     // {id, category, name, unit, stock, unitCost}
+  let purchases = store.get('purchases', []);       // {id, materialId, qty, cost, date}
+  let karigars = store.get('karigars', []);         // {id, name, role, rate, phone}
+  let overheads = store.get('overheads', {electricity:0, rent:0});
+  let miscExpenses = store.get('miscExpenses', []); // {id, desc, amount, date}
+
+  if(materials === null){
+    materials = [
+      {id:uid(), category:'Fabric', name:'Cotton', unit:'m', stock:0, unitCost:0},
+      {id:uid(), category:'Fabric', name:'Silk', unit:'m', stock:0, unitCost:0},
+      {id:uid(), category:'Fabric', name:'Velvet', unit:'m', stock:0, unitCost:0},
+      {id:uid(), category:'Zips', name:'Metal Zip', unit:'pcs', stock:0, unitCost:0},
+      {id:uid(), category:'Zips', name:'Invisible Zip', unit:'pcs', stock:0, unitCost:0},
+      {id:uid(), category:'Zips', name:'Nylon Zip', unit:'pcs', stock:0, unitCost:0},
+      {id:uid(), category:'Thread', name:'Cotton Thread', unit:'pcs', stock:0, unitCost:0},
+      {id:uid(), category:'Thread', name:'Polyester Thread', unit:'pcs', stock:0, unitCost:0},
+      {id:uid(), category:'Thread', name:'Silk Thread', unit:'pcs', stock:0, unitCost:0},
+      {id:uid(), category:'Cups', name:'Foam Cups', unit:'pcs', stock:0, unitCost:0},
+      {id:uid(), category:'Cups', name:'Net Cups', unit:'pcs', stock:0, unitCost:0},
+      {id:uid(), category:'Cups', name:'Padded Cups', unit:'pcs', stock:0, unitCost:0}
+    ];
+    store.set('materials', materials);
+  }
+
+  // migrate any orders saved before per-stage tracking existed
+  let ordersMigrated = false;
+  orders.forEach(o=>{
+    if(!o.stages){ o.stages = freshStages(); ordersMigrated = true; }
+    if(o.supervisor === undefined){ o.supervisor = ''; ordersMigrated = true; }
+  });
+  if(ordersMigrated) store.set('orders', orders);
+  let karigarsMigrated = false;
+  karigars.forEach(k=>{ if(k.active===undefined){ k.active = true; karigarsMigrated = true; } });
+  if(karigarsMigrated) store.set('karigars', karigars);
+
+  document.getElementById('ohElectricity').value = overheads.electricity || '';
+  document.getElementById('ohRent').value = overheads.rent || '';
+
+  function customerName(id){ const c = customers.find(x=>x.id===id); return c? c.name : '—'; }
+  function materialById(id){ return materials.find(m=>m.id===id); }
+  function karigarById(id){ return karigars.find(k=>k.id===id); }
+
+  function matOptionsHtml(){
+    return materials.map(m=>`<option value="${m.id}">${esc(m.category)} · ${esc(m.name)} (${m.stock} ${esc(m.unit)} @ ${money(m.unitCost)})</option>`).join('');
+  }
+  function karOptionsHtml(){
+    if(karigars.length===0) return '<option value="">Add a karigar first</option>';
+    return karigars.map(k=>`<option value="${k.id}">${esc(k.name)} (${esc(k.role)} · ${money(k.rate)}/hr)</option>`).join('');
+  }
+  function refreshGlobalSelects(){
+    document.getElementById('purMaterial').innerHTML = matOptionsHtml();
+  }
+
+  // ================= ORDER COST CALC =================
+  function orderCosts(o){
+    const materialsCost = o.materialsUsed.reduce((a,l)=> a + l.cost, 0);
+    const laborCost = o.laborUsed.reduce((a,l)=> a + l.cost, 0);
+    const overheadCost = (o.days||0) * ((overheads.electricity||0) + (overheads.rent||0));
+    const totalCost = materialsCost + laborCost + overheadCost;
+    const profit = (o.price||0) - totalCost;
+    return {materialsCost, laborCost, overheadCost, totalCost, profit};
+  }
+
+  function restockOrdersMaterials(orderList){
+    orderList.forEach(o=>{
+      o.materialsUsed.forEach(l=>{
+        const m = materialById(l.materialId);
+        if(m) m.stock = Math.round((m.stock + l.qty)*100)/100;
+      });
+    });
+    store.set('materials', materials);
+  }
+
+  // ================= CLIENTS =================
+  document.getElementById('addCliBtn').addEventListener('click', ()=>{
+    const name = document.getElementById('cliName').value.trim();
+    if(!name) return;
+    customers.push({id: uid(), name, phone: document.getElementById('cliPhone').value.trim()});
+    store.set('customers', customers);
+    document.getElementById('cliName').value=''; document.getElementById('cliPhone').value='';
+    renderClients();
+  });
+
+  function renderClients(){
+    const wrap = document.getElementById('clientList');
+    if(customers.length===0){
+      wrap.innerHTML = '<div class="empty-note">No clients yet.</div>';
+      return;
+    }
+    wrap.innerHTML = customers.map(c=>{
+      const cOrders = orders.filter(o=>o.customerId===c.id);
+      return `<div class="client-card" data-cid="${c.id}">
+        <div class="client-head">
+          <div>
+            <div class="cname">${esc(c.name)}</div>
+            <div class="csub">${esc(c.phone||'')} ${cOrders.length? '· '+cOrders.length+' order'+(cOrders.length===1?'':'s') : ''}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="del-client" data-cid="${c.id}" title="Delete client">✕</span>
+            <div class="chev">▾</div>
+          </div>
+        </div>
+        <div class="client-body">
+          <div class="mini-add">
+            <input placeholder="Item (e.g. Bridal blouse)" class="new-item-name" style="flex:1.4;">
+            <input type="number" placeholder="Price ₹" class="new-item-price">
+            <button class="small-btn add-order-btn" data-cid="${c.id}">Add Order</button>
+          </div>
+          ${cOrders.map(o=> renderOrderBlock(o)).join('')}
+        </div>
+      </div>`;
+    }).join('');
+
+    wrap.querySelectorAll('.client-head').forEach(h=> h.addEventListener('click', ()=> h.closest('.client-card').classList.toggle('open')));
+    wrap.querySelectorAll('.del-client').forEach(el=>{
+      el.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        if(!el.classList.contains('confirming')){
+          el.classList.add('confirming');
+          el.textContent = 'Tap to confirm';
+          setTimeout(()=>{ el.classList.remove('confirming'); el.textContent='✕'; }, 2500);
+          return;
+        }
+        restockOrdersMaterials(orders.filter(o=>o.customerId===el.dataset.cid));
+        orders = orders.filter(o=>o.customerId!==el.dataset.cid);
+        customers = customers.filter(c=>c.id!==el.dataset.cid);
+        store.set('customers', customers); store.set('orders', orders);
+        renderClients(); renderMaterials(); renderKarigar(); renderProductionBoard();
+      });
+    });
+    wrap.querySelectorAll('.del-order').forEach(el=>{
+      el.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        if(!el.classList.contains('confirming')){
+          el.classList.add('confirming');
+          el.textContent = 'Tap to confirm';
+          setTimeout(()=>{ el.classList.remove('confirming'); el.textContent='✕'; }, 2500);
+          return;
+        }
+        const o = orders.find(x=>x.id===el.dataset.oid);
+        if(o) restockOrdersMaterials([o]);
+        orders = orders.filter(x=>x.id!==el.dataset.oid);
+        store.set('orders', orders);
+        renderClients(); renderMaterials(); renderKarigar(); renderProductionBoard();
+      });
+    });
+    wrap.querySelectorAll('.add-order-btn').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const body = btn.closest('.client-body');
+        const name = body.querySelector('.new-item-name').value.trim();
+        const price = parseFloat(body.querySelector('.new-item-price').value) || 0;
+        if(!name) return;
+        orders.push({
+          id: uid(), customerId: btn.dataset.cid, item: name, price, due:'', supervisor:'', days: 1,
+          materialsUsed: [], laborUsed: [], stages: freshStages(), createdAt: new Date().toISOString()
+        });
+        store.set('orders', orders);
+        renderClients(); renderProductionBoard();
+        // reopen this client card
+        const card = wrap.querySelector(`.client-card[data-cid="${btn.dataset.cid}"]`);
+        if(card) card.classList.add('open');
+      });
+    });
+    wireOrderBlocks(wrap);
+  }
+
+  function renderOrderBlock(o){
+    const c = orderCosts(o);
+    const receivedCount = o.stages.filter(s=>s.state==='received').length;
+    const allDone = receivedCount===o.stages.length;
+    return `<div class="order-block" data-oid="${o.id}">
+      <div class="order-top">
+        <div>
+          <div class="oname">${esc(o.item)}</div>
+        </div>
+        <div style="display:flex; align-items:center;">
+          <div class="ostage" style="cursor:default; ${allDone?'background:var(--moss-soft); color:var(--moss);':''}">${allDone? 'All received ✓' : receivedCount+'/'+o.stages.length+' stages'}</div>
+          <span class="del-order" data-oid="${o.id}" title="Delete order">✕</span>
+        </div>
+      </div>
+      <div class="order-money">
+        <div><span class="om">Price</span> <span class="ov">${money(o.price)}</span></div>
+        <div><span class="om">Cost</span> <span class="ov">${money(c.totalCost)}</span></div>
+        <div><span class="om">Profit</span> <span class="ov profit ${c.profit>=0?'pos':'neg'}">${money(c.profit)}</span></div>
+      </div>
+      <div class="order-detail">
+        <div class="subhead">Production supervisor</div>
+        <select class="supervisor-select" data-oid="${o.id}">
+          <option value="">Unassigned</option>
+          ${karigars.map(k=>`<option value="${k.id}" ${o.supervisor===k.id?'selected':''}>${esc(k.name)}</option>`).join('')}
+        </select>
+
+        <div class="subhead">Production stages</div>
+        ${o.stages.map((s, sIdx)=>`
+          <div class="stage-card">
+            <div class="stage-card-top">
+              <span class="stage-card-name">${esc(s.name)}</span>
+              <span class="stage-state-chip ${s.state}" data-oid="${o.id}" data-sidx="${sIdx}">${STAGE_STATE_LABEL[s.state]} ▸</span>
+            </div>
+            <div class="stage-card-fields">
+              <select class="stage-worker" data-oid="${o.id}" data-sidx="${sIdx}">
+                <option value="">Worker: Unassigned</option>
+                ${karigars.map(k=>`<option value="${k.id}" ${s.workerId===k.id?'selected':''}>${esc(k.name)}</option>`).join('')}
+              </select>
+              <div class="form-row" style="margin-top:6px;">
+                <input type="number" class="stage-est" data-oid="${o.id}" data-sidx="${sIdx}" placeholder="Est. min" value="${s.estMin||''}">
+                <input type="number" class="stage-actual" data-oid="${o.id}" data-sidx="${sIdx}" placeholder="Actual min" value="${s.actualMin||''}">
+              </div>
+              <input class="stage-notes" data-oid="${o.id}" data-sidx="${sIdx}" placeholder="Stage notes..." value="${esc(s.notes)}" style="margin-top:6px;">
+              ${s.date? `<div class="esub" style="margin-top:4px;">Last updated ${fmtDay(s.date)}</div>` : ''}
+            </div>
+          </div>
+        `).join('')}
+
+        <div class="subhead">Materials used</div>
+        ${o.materialsUsed.map(l=>{
+          const m = materialById(l.materialId);
+          const noCost = m && m.unitCost<=0;
+          return `<div class="line-row"><span>${esc(m?m.name:'—')} · ${l.qty} ${esc(m?m.unit:'')}${noCost?' <span style="color:var(--rose);">(no cost set)</span>':''}</span><span>${money(l.cost)} <span class="del-x" data-order="${o.id}" data-kind="mat" data-line="${l.id}">✕</span></span></div>`;
+        }).join('') || '<div class="empty-note" style="padding:6px 0;">None yet</div>'}
+        <div class="mini-add">
+          <select class="mat-select">${matOptionsHtml()}</select>
+          <input type="number" class="mat-qty" placeholder="Qty" style="max-width:70px;">
+          <button class="small-btn add-mat-line" data-oid="${o.id}">Add</button>
+        </div>
+
+        <div class="subhead">Labor used</div>
+        ${o.laborUsed.map(l=>{
+          const k = karigarById(l.karigarId);
+          return `<div class="line-row"><span>${esc(k?k.name:'—')} · ${l.hours}h</span><span>${money(l.cost)} <span class="del-x" data-order="${o.id}" data-kind="lab" data-line="${l.id}">✕</span></span></div>`;
+        }).join('') || '<div class="empty-note" style="padding:6px 0;">None yet</div>'}
+        <div class="mini-add">
+          <select class="kar-select">${karOptionsHtml()}</select>
+          <input type="number" class="kar-hours" placeholder="Hours" style="max-width:70px;">
+          <button class="small-btn add-lab-line" data-oid="${o.id}">Add</button>
+        </div>
+
+        <div class="subhead">Production days (for overhead)</div>
+        <input type="number" class="days-input" value="${o.days}" data-oid="${o.id}" style="max-width:100px;">
+
+        <div class="cost-summary">
+          <div class="row"><span>Materials</span><span>${money(c.materialsCost)}</span></div>
+          <div class="row"><span>Labor</span><span>${money(c.laborCost)}</span></div>
+          <div class="row"><span>Overhead (${o.days||0}d)</span><span>${money(c.overheadCost)}</span></div>
+          <div class="row total"><span>Total cost</span><span>${money(c.totalCost)}</span></div>
+          <div class="row profit"><span>Profit</span><span class="${c.profit>=0?'':''}" style="color:${c.profit>=0?'var(--moss)':'var(--rose)'}">${money(c.profit)}</span></div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function wireOrderBlocks(wrap){
+    wrap.querySelectorAll('.order-top').forEach(t=>{
+      t.addEventListener('click', (e)=>{
+        if(e.target.classList.contains('ostage')) return;
+        t.closest('.order-block').classList.toggle('open');
+      });
+    });
+    wrap.querySelectorAll('.supervisor-select').forEach(sel=>{
+      sel.addEventListener('click', e=> e.stopPropagation());
+      sel.addEventListener('change', ()=>{
+        const o = orders.find(x=>x.id===sel.dataset.oid);
+        o.supervisor = sel.value;
+        store.set('orders', orders);
+      });
+    });
+    wrap.querySelectorAll('.stage-state-chip').forEach(chip=>{
+      chip.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const o = orders.find(x=>x.id===chip.dataset.oid);
+        const s = o.stages[parseInt(chip.dataset.sidx)];
+        const idx = STAGE_STATE_ORDER.indexOf(s.state);
+        s.state = STAGE_STATE_ORDER[Math.min(idx+1, STAGE_STATE_ORDER.length-1)];
+        s.date = todayISO();
+        store.set('orders', orders);
+        renderClients(); renderProductionBoard(); renderKarigar();
+        reopenOrder(o.id);
+      });
+    });
+    wrap.querySelectorAll('.stage-worker').forEach(sel=>{
+      sel.addEventListener('click', e=> e.stopPropagation());
+      sel.addEventListener('change', ()=>{
+        const o = orders.find(x=>x.id===sel.dataset.oid);
+        o.stages[parseInt(sel.dataset.sidx)].workerId = sel.value;
+        store.set('orders', orders);
+        renderProductionBoard(); renderKarigar();
+      });
+    });
+    wrap.querySelectorAll('.stage-est, .stage-actual, .stage-notes').forEach(inp=>{
+      inp.addEventListener('click', e=> e.stopPropagation());
+      inp.addEventListener('change', ()=>{
+        const o = orders.find(x=>x.id===inp.dataset.oid);
+        const s = o.stages[parseInt(inp.dataset.sidx)];
+        if(inp.classList.contains('stage-est')) s.estMin = parseFloat(inp.value)||0;
+        else if(inp.classList.contains('stage-actual')) s.actualMin = parseFloat(inp.value)||0;
+        else s.notes = inp.value.trim();
+        store.set('orders', orders);
+      });
+    });
+    wrap.querySelectorAll('.add-mat-line').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const block = btn.closest('.order-detail');
+        const materialId = block.querySelector('.mat-select').value;
+        const qty = parseFloat(block.querySelector('.mat-qty').value);
+        const m = materialById(materialId);
+        if(!m || !qty || qty<=0) return;
+        const cost = qty * m.unitCost;
+        const o = orders.find(x=>x.id===btn.dataset.oid);
+        o.materialsUsed.push({id: uid(), materialId, qty, cost});
+        m.stock = Math.round((m.stock - qty)*100)/100;
+        store.set('orders', orders); store.set('materials', materials);
+        renderClients(); renderMaterials();
+        reopenOrder(btn.dataset.oid);
+      });
+    });
+    wrap.querySelectorAll('.add-lab-line').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const block = btn.closest('.order-detail');
+        const karigarId = block.querySelector('.kar-select').value;
+        const hours = parseFloat(block.querySelector('.kar-hours').value);
+        const k = karigarById(karigarId);
+        if(!k || !hours || hours<=0) return;
+        const cost = hours * k.rate;
+        const o = orders.find(x=>x.id===btn.dataset.oid);
+        o.laborUsed.push({id: uid(), karigarId, hours, cost});
+        store.set('orders', orders);
+        renderClients(); renderKarigar(); renderProductionBoard();
+        reopenOrder(btn.dataset.oid);
+      });
+    });
+    wrap.querySelectorAll('.del-x').forEach(el=>{
+      el.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const o = orders.find(x=>x.id===el.dataset.order);
+        if(el.dataset.kind==='mat'){
+          const line = o.materialsUsed.find(l=>l.id===el.dataset.line);
+          if(line){ const m = materialById(line.materialId); if(m) m.stock = Math.round((m.stock + line.qty)*100)/100; }
+          o.materialsUsed = o.materialsUsed.filter(l=>l.id!==el.dataset.line);
+          store.set('materials', materials);
+        } else {
+          o.laborUsed = o.laborUsed.filter(l=>l.id!==el.dataset.line);
+        }
+        store.set('orders', orders);
+        renderClients(); renderMaterials(); renderKarigar(); renderProductionBoard();
+        reopenOrder(el.dataset.order);
+      });
+    });
+    wrap.querySelectorAll('.days-input').forEach(inp=>{
+      inp.addEventListener('click', e=> e.stopPropagation());
+      inp.addEventListener('change', ()=>{
+        const o = orders.find(x=>x.id===inp.dataset.oid);
+        o.days = parseFloat(inp.value) || 0;
+        store.set('orders', orders);
+        renderClients();
+        reopenOrder(inp.dataset.oid);
+      });
+    });
+  }
+
+  function reopenOrder(orderId){
+    const o = orders.find(x=>x.id===orderId);
+    if(!o) return;
+    const clientCard = document.querySelector(`.client-card[data-cid="${o.customerId}"]`);
+    if(clientCard) clientCard.classList.add('open');
+    const orderBlock = document.querySelector(`.order-block[data-oid="${orderId}"]`);
+    if(orderBlock) orderBlock.classList.add('open');
+  }
+
+  // ================= MATERIALS =================
+  document.getElementById('addMatBtn').addEventListener('click', ()=>{
+    const category = document.getElementById('matCategory').value.trim() || 'Other';
+    const name = document.getElementById('matName').value.trim();
+    if(!name) return;
+    materials.push({
+      id: uid(), category, name,
+      unit: document.getElementById('matUnit').value,
+      stock: parseFloat(document.getElementById('matStock').value) || 0,
+      unitCost: parseFloat(document.getElementById('matCost').value) || 0
+    });
+    store.set('materials', materials);
+    ['matCategory','matName','matStock','matCost'].forEach(id=> document.getElementById(id).value='');
+    renderMaterials(); refreshGlobalSelects();
+  });
+
+  document.getElementById('logPurBtn').addEventListener('click', ()=>{
+    const materialId = document.getElementById('purMaterial').value;
+    const qty = parseFloat(document.getElementById('purQty').value);
+    const cost = parseFloat(document.getElementById('purCost').value);
+    const m = materialById(materialId);
+    if(!m || !qty || qty<=0 || !cost || cost<=0) return;
+    m.stock = Math.round((m.stock + qty)*100)/100;
+    m.unitCost = Math.round((cost/qty)*100)/100;
+    store.set('materials', materials);
+    purchases.push({id: uid(), materialId, qty, cost, date: todayISO()});
+    store.set('purchases', purchases);
+    ['purQty','purCost'].forEach(id=> document.getElementById(id).value='');
+    renderMaterials(); renderExpenses(); refreshGlobalSelects();
+  });
+
+  function renderMaterials(){
+    const wrap = document.getElementById('materialList');
+    if(materials.length===0){ wrap.innerHTML = '<div class="empty-note">No materials yet.</div>'; return; }
+    const cats = [...new Set(materials.map(m=>m.category))];
+    wrap.innerHTML = cats.map(cat=>{
+      const items = materials.filter(m=>m.category===cat);
+      return `<div class="mat-cat">${esc(cat)}</div>` + items.map(m=>`
+        <div class="mat-row">
+          <div>
+            <div class="mname">${esc(m.name)}</div>
+            <div class="mmeta">${money(m.unitCost)} / ${esc(m.unit)}</div>
+          </div>
+          <div class="mstock ${m.stock<=0?'low':''}">${m.stock} ${esc(m.unit)}${m.unitCost<=0?'<br><span style="font-size:10px;">no cost set</span>':''}</div>
+        </div>
+      `).join('');
+    }).join('');
+  }
+
+  // ================= KARIGAR =================
+  document.getElementById('addKarBtn').addEventListener('click', ()=>{
+    const name = document.getElementById('karName').value.trim();
+    if(!name) return;
+    karigars.push({
+      id: uid(), name,
+      role: document.getElementById('karRole').value,
+      rate: parseFloat(document.getElementById('karRate').value) || 0,
+      phone: document.getElementById('karPhone').value.trim()
+    });
+    store.set('karigars', karigars);
+    ['karName','karRate','karPhone'].forEach(id=> document.getElementById(id).value='');
+    renderKarigar();
+  });
+
+  function renderKarigar(){
+    const wrap = document.getElementById('karigarList');
+    if(karigars.length===0){ wrap.innerHTML = '<div class="empty-note">No karigars yet.</div>'; return; }
+    wrap.innerHTML = karigars.map(k=>{
+      let hours=0, earned=0;
+      orders.forEach(o=> o.laborUsed.forEach(l=>{ if(l.karigarId===k.id){ hours+=l.hours; earned+=l.cost; } }));
+      // Jobbers-list-style counts: every stage card assigned to this karigar, by state
+      let allotted=0, open=0, active=0, completed=0;
+      orders.forEach(o=> (o.stages||[]).forEach(s=>{
+        if(s.workerId!==k.id) return;
+        allotted++;
+        if(s.state==='not_issued') open++;
+        else if(s.state==='started') active++;
+        else completed++; // completed or received
+      }));
+      return `<div class="kar-row">
+        <div>
+          <div class="kname">${esc(k.name)}</div>
+          <div class="kmeta">${esc(k.role)} · ${money(k.rate)}/hr ${k.phone? '· '+esc(k.phone):''}</div>
+          <div class="kmeta" style="margin-top:4px;">Allotted ${allotted} · Open ${open} · Active ${active} · Completed ${completed}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="kearn">${money(earned)}</div>
+          <div class="kmeta">${hours}h logged</div>
+          <div class="kar-status ${k.active!==false?'on':'off'}" data-id="${k.id}">${k.active!==false?'Active':'Inactive'}</div>
+        </div>
+      </div>`;
+    }).join('');
+    wrap.querySelectorAll('.kar-status').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const k = karigarById(el.dataset.id);
+        k.active = !(k.active!==false);
+        store.set('karigars', karigars);
+        renderKarigar();
+      });
+    });
+  }
+
+  // ================= PRODUCTION BOARD =================
+  function renderProductionBoard(){
+    const wrap = document.getElementById('productionBoard');
+    if(!wrap) return;
+    const today = todayISO();
+    const groups = STAGES.map(()=>[]);
+    orders.forEach(o=>{
+      const idx = o.stages.findIndex(s=>s.state!=='received');
+      if(idx===-1) return; // fully received, not on the board
+      groups[idx].push(o);
+    });
+    const html = STAGES.map((name, i)=>{
+      if(groups[i].length===0) return '';
+      return `<div class="stage-group open" data-stage="${i}">
+        <div class="stage-group-head">
+          <span class="sgname">${esc(name)}<span class="sgcount">${groups[i].length}</span></span>
+        </div>
+        <div class="stage-group-body">
+          ${groups[i].map(o=>{
+            const c = customerName(o.customerId);
+            const s = o.stages[i];
+            const worker = s.workerId? karigarById(s.workerId) : null;
+            const overdue = o.due && o.due < today;
+            return `<div class="board-item">
+              <div class="biname">${esc(o.item)}</div>
+              <div class="bisub">${esc(c)} ${o.due? '· due '+fmtDay(o.due)+(overdue?' (overdue)':'') : ''} ${worker? '· '+esc(worker.name):' · Unassigned'}</div>
+              <div style="margin-top:6px;"><span class="stage-state-chip ${s.state}" data-oid="${o.id}" data-sidx="${i}">${STAGE_STATE_LABEL[s.state]} ▸</span></div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }).join('');
+    wrap.innerHTML = html || '<div class="empty-note">No items in production.</div>';
+    wrap.querySelectorAll('.stage-state-chip').forEach(chip=>{
+      chip.addEventListener('click', ()=>{
+        const o = orders.find(x=>x.id===chip.dataset.oid);
+        const s = o.stages[parseInt(chip.dataset.sidx)];
+        const idx = STAGE_STATE_ORDER.indexOf(s.state);
+        s.state = STAGE_STATE_ORDER[Math.min(idx+1, STAGE_STATE_ORDER.length-1)];
+        s.date = todayISO();
+        store.set('orders', orders);
+        renderProductionBoard(); renderClients(); renderKarigar();
+      });
+    });
+  }
+
+  // ================= BACKUP & SYNC =================
+  const SYNC_KEYS = ['customers','orders','materials','purchases','karigars','overheads','miscExpenses'];
+
+  document.getElementById('exportBtn').addEventListener('click', ()=>{
+    const dump = {};
+    SYNC_KEYS.forEach(k=> dump[k] = store.get(k, null));
+    document.getElementById('exportBox').value = JSON.stringify(dump);
+    document.getElementById('syncStatus').textContent = '';
+  });
+
+  document.getElementById('copyExportBtn').addEventListener('click', ()=>{
+    const box = document.getElementById('exportBox');
+    const status = document.getElementById('syncStatus');
+    if(!box.value){ status.textContent = 'Tap "Export all data" first.'; status.style.color = 'var(--rose)'; return; }
+    box.focus(); box.select();
+    let copied = false;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(box.value).then(()=>{
+        status.textContent = 'Copied.'; status.style.color = 'var(--moss)';
+      }).catch(()=>{
+        status.textContent = 'Couldn\'t auto-copy — text is selected, use your device\'s copy action.'; status.style.color = 'var(--ash-dim)';
+      });
+      copied = true;
+    }
+    if(!copied){
+      status.textContent = 'Text is selected — use your device\'s copy action.'; status.style.color = 'var(--ash-dim)';
+    }
+  });
+
+  document.getElementById('importBtn').addEventListener('click', ()=>{
+    const raw = document.getElementById('importBox').value.trim();
+    const status = document.getElementById('syncStatus');
+    if(!raw){ status.textContent = 'Paste exported data first.'; status.style.color = 'var(--rose)'; return; }
+    let parsed;
+    try{ parsed = JSON.parse(raw); }
+    catch(e){ status.textContent = 'That doesn\'t look like valid exported data — re-copy it and try again.'; status.style.color = 'var(--rose)'; return; }
+    SYNC_KEYS.forEach(k=>{ if(parsed[k] !== undefined){ store.set(k, parsed[k]); } });
+    status.textContent = 'Imported — reloading...'; status.style.color = 'var(--moss)';
+    setTimeout(()=> location.reload(), 600);
+  });
+
+  // ================= EXPENSES =================
+  document.getElementById('saveOverheadBtn').addEventListener('click', ()=>{
+    overheads = {
+      electricity: parseFloat(document.getElementById('ohElectricity').value) || 0,
+      rent: parseFloat(document.getElementById('ohRent').value) || 0
+    };
+    store.set('overheads', overheads);
+    renderClients();
+  });
+
+  document.getElementById('addExpBtn').addEventListener('click', ()=>{
+    const desc = document.getElementById('expDesc').value.trim();
+    const amount = parseFloat(document.getElementById('expAmt').value);
+    if(!desc || !amount) return;
+    miscExpenses.push({id: uid(), desc, amount, date: todayISO()});
+    store.set('miscExpenses', miscExpenses);
+    ['expDesc','expAmt'].forEach(id=> document.getElementById(id).value='');
+    renderExpenses();
+  });
+
+  function renderExpenses(){
+    const wrap = document.getElementById('expList');
+    if(miscExpenses.length===0){ wrap.innerHTML = '<div class="empty-note">No other expenses logged.</div>'; }
+    else {
+      const sorted = [...miscExpenses].sort((a,b)=> new Date(b.date)-new Date(a.date));
+      wrap.innerHTML = sorted.map(e=>`
+        <div class="exp-row"><span>${esc(e.desc)}<div class="esub">${fmtDay(e.date)}</div></span><span>${money(e.amount)}</span></div>
+      `).join('');
+    }
+    const purWrap = document.getElementById('purList');
+    if(purchases.length===0){ purWrap.innerHTML = '<div class="empty-note">No purchases logged.</div>'; }
+    else {
+      const sorted = [...purchases].sort((a,b)=> new Date(b.date)-new Date(a.date));
+      purWrap.innerHTML = sorted.map(p=>{
+        const m = materialById(p.materialId);
+        return `<div class="exp-row"><span>${esc(m?m.name:'—')} · ${p.qty} ${esc(m?m.unit:'')}<div class="esub">${fmtDay(p.date)}</div></span><span>${money(p.cost)}</span></div>`;
+      }).join('');
+    }
+  }
+
+  // init
+  refreshGlobalSelects();
+  renderClients();
+  renderMaterials();
+  renderKarigar();
+  renderExpenses();
+  renderProductionBoard();
+})();
+</script>
+</body>
+</html>
